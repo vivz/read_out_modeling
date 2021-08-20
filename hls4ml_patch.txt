@@ -1,0 +1,42 @@
+diff --git a/hls4ml/converters/pytorch/core.py b/hls4ml/converters/pytorch/core.py
+index eb5f7f3..5f9d3df 100644
+--- a/hls4ml/converters/pytorch/core.py
++++ b/hls4ml/converters/pytorch/core.py
+@@ -25,7 +25,7 @@ def parse_linear_layer(pytorch_layer, layer_name, input_shapes, data_reader, con
+     return layer, output_shape
+ 
+ 
+-activation_layers = ['LeakyReLU', 'ThresholdedReLU', 'ELU', 'PReLU', 'Softmax', 'ReLU']
++activation_layers = ['LeakyReLU', 'ThresholdedReLU', 'ELU', 'PReLU', 'Softmax', 'ReLU', 'Sigmoid']
+ @pytorch_handler(*activation_layers)
+ def parse_activation_layer(pytorch_layer, layer_name, input_shapes, data_reader, config):
+     
+@@ -33,6 +33,9 @@ def parse_activation_layer(pytorch_layer, layer_name, input_shapes, data_reader,
+     
+     layer['class_name'] =  pytorch_layer.__class__.__name__
+     layer['activation'] = layer['class_name']
++    if layer['class_name'] == 'Sigmoid':
++        layer['class_name'] = 'Activation'
++        layer['activation'] = 'sigmoid'
+     layer['name'] = layer_name
+     
+     if layer['class_name'] == 'ReLU':
+@@ -67,4 +70,4 @@ def parse_batchnorm_layer(pytorch_layer, layer_name, input_shapes, data_reader,
+     elif len(input_shapes[0]) > 2:
+         layer['n_filt']=input_shapes[0][1] #Always channel first for Pytorch
+ 
+-    return layer, [shape for shape in input_shapes[0]]
+\ No newline at end of file
++    return layer, [shape for shape in input_shapes[0]]
+diff --git a/hls4ml/converters/pytorch_to_hls.py b/hls4ml/converters/pytorch_to_hls.py
+index a3daebb..64991ec 100644
+--- a/hls4ml/converters/pytorch_to_hls.py
++++ b/hls4ml/converters/pytorch_to_hls.py
+@@ -82,7 +82,6 @@ class PyTorchFileReader(PyTorchModelReader): #Inherit get_weights_data method
+ 
+         self.state_dict = self.torch_model.state_dict()
+         
+-        return data
+ 
+ ####----------------------Layer handling---------------------######
+ layer_handlers = {}
